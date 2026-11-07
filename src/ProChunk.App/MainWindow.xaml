@@ -1,0 +1,286 @@
+﻿<Window x:Class="ProChunk.App.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:map="clr-namespace:ProChunk.App.Map"
+        Title="ProChunk Studio" Height="860" Width="1440" MinWidth="1000" MinHeight="600"
+        Background="{StaticResource Bg}" Foreground="{StaticResource Text}" FontFamily="Segoe UI" FontSize="13"
+        WindowStartupLocation="CenterScreen" Icon="Assets/app.ico"
+        AllowDrop="True" DragOver="Window_DragOver" DragLeave="Window_DragLeave" Drop="Window_Drop"
+        StateChanged="Window_StateChanged">
+
+    <WindowChrome.WindowChrome>
+        <WindowChrome CaptionHeight="52" ResizeBorderThickness="6" GlassFrameThickness="0" CornerRadius="0" UseAeroCaptionButtons="False"/>
+    </WindowChrome.WindowChrome>
+
+    <Window.Resources>
+        <!-- Başlık çubuğu düğmeleri -->
+        <Style x:Key="BarButton" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+            <Setter Property="WindowChrome.IsHitTestVisibleInChrome" Value="True"/>
+            <Setter Property="Background" Value="#1AFFFFFF"/>
+            <Setter Property="BorderBrush" Value="#22FFFFFF"/>
+            <Setter Property="Padding" Value="12,7"/>
+            <Setter Property="Margin" Value="0,0,6,0"/>
+        </Style>
+        <Style x:Key="BarPrimary" TargetType="Button" BasedOn="{StaticResource BarButton}">
+            <Setter Property="Background" Value="#2F6FD6"/>
+            <Setter Property="BorderBrush" Value="#4C8DFF"/>
+        </Style>
+        <Style x:Key="CaptionButton" TargetType="Button">
+            <Setter Property="WindowChrome.IsHitTestVisibleInChrome" Value="True"/>
+            <Setter Property="Width" Value="46"/>
+            <Setter Property="Height" Value="52"/>
+            <Setter Property="Foreground" Value="#C8C8D0"/>
+            <Setter Property="FontFamily" Value="Segoe MDL2 Assets"/>
+            <Setter Property="FontSize" Value="10"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="b" Background="Transparent">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="b" Property="Background" Value="#22FFFFFF"/>
+                                <Setter Property="Foreground" Value="White"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style x:Key="CloseButton" TargetType="Button" BasedOn="{StaticResource CaptionButton}">
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="b" Background="Transparent">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="b" Property="Background" Value="#E81123"/>
+                                <Setter Property="Foreground" Value="White"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
+
+    <DockPanel x:Name="RootPanel">
+        <!-- Üst çubuk -->
+        <!-- Başlık çubuğu (pencerenin üstü; sürüklenebilir) -->
+        <Border DockPanel.Dock="Top" Height="52" BorderBrush="#2A3550" BorderThickness="0,0,0,1">
+            <Border.Background>
+                <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                    <GradientStop Color="#13203A" Offset="0"/>
+                    <GradientStop Color="#171B27" Offset="0.45"/>
+                    <GradientStop Color="#16161B" Offset="1"/>
+                </LinearGradientBrush>
+            </Border.Background>
+            <DockPanel>
+                <!-- Pencere düğmeleri -->
+                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                    <Button Style="{StaticResource CaptionButton}" Content="&#xE921;" Click="Minimize_Click" ToolTip="Simge durumuna küçült"/>
+                    <Button x:Name="MaxButton" Style="{StaticResource CaptionButton}" Content="&#xE922;" Click="Maximize_Click" ToolTip="Ekranı kapla"/>
+                    <Button Style="{StaticResource CloseButton}" Content="&#xE8BB;" Click="Close_Click" ToolTip="Kapat"/>
+                </StackPanel>
+
+                <!-- Eylemler -->
+                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,14,0">
+                    <Button Content="📂  Aç" Style="{StaticResource BarButton}" Click="OpenWorld_Click" ToolTip="Dünya dosyası aç (Ctrl+O)"/>
+                    <Border Width="1" Height="22" Background="#33FFFFFF" Margin="4,0,10,0"/>
+                    <Button x:Name="UndoBtn" Content="↶" Style="{StaticResource BarButton}" Click="Undo_Click" IsEnabled="False" ToolTip="Geri al (Ctrl+Z)" FontSize="15" Padding="11,4"/>
+                    <Button x:Name="RedoBtn" Content="↷" Style="{StaticResource BarButton}" Click="Redo_Click" IsEnabled="False" ToolTip="Yinele (Ctrl+Y)" FontSize="15" Padding="11,4"/>
+                    <Border Width="1" Height="22" Background="#33FFFFFF" Margin="4,0,10,0"/>
+                    <Button x:Name="SaveBtn" Content="💾  Kaydet" Style="{StaticResource BarPrimary}" Click="Save_Click" IsEnabled="False" ToolTip="Değişiklikleri diske yaz (Ctrl+S)"/>
+                    <Button x:Name="ExportBtn" Content="📦  Dışa Aktar" Style="{StaticResource BarButton}" Click="Export_Click" IsEnabled="False" Margin="0"
+                            ToolTip="Dünyayı .mcworld (Bedrock) veya .zip (Java) olarak kaydet (Ctrl+E)"/>
+                </StackPanel>
+
+                <!-- Logo + ad + dünya -->
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="10,0,0,0">
+                    <Image Source="Assets/logo.png" Width="40" Height="40" RenderOptions.BitmapScalingMode="HighQuality" Margin="0,0,8,0"/>
+                    <StackPanel VerticalAlignment="Center" Margin="0,0,22,0">
+                        <TextBlock FontSize="15" FontWeight="Bold" Margin="0,-2,0,0">
+                            <Run Text="Pro" Foreground="#F2F2F7"/><Run Text="Chunk" Foreground="#3FB4FF"/>
+                        </TextBlock>
+                        <TextBlock Text="STUDIO" FontSize="9" FontWeight="SemiBold" Foreground="#8FA3C8" Margin="1,-2,0,0"/>
+                    </StackPanel>
+
+                    <Border x:Name="WorldChip" Background="#14FFFFFF" BorderBrush="#22FFFFFF" BorderThickness="1" CornerRadius="16" Padding="5,4,14,4"
+                            VerticalAlignment="Center">
+                        <StackPanel Orientation="Horizontal">
+                            <Border x:Name="EditionBorder" Background="#33333D" CornerRadius="10" Padding="8,2" Margin="0,0,9,0">
+                                <TextBlock x:Name="EditionBadge" Text="DÜNYA YOK" FontSize="10" FontWeight="Bold" VerticalAlignment="Center"/>
+                            </Border>
+                            <TextBlock x:Name="WorldName" Text="Bir dünya aç" FontWeight="SemiBold" VerticalAlignment="Center" MaxWidth="260" TextTrimming="CharacterEllipsis"/>
+                            <TextBlock x:Name="DirtyMark" Text="  ● kaydedilmedi" Foreground="#F0B43C" VerticalAlignment="Center" Visibility="Collapsed" FontSize="12"/>
+                        </StackPanel>
+                    </Border>
+                    <TextBlock x:Name="WorldTitle" Foreground="#6E7891" Margin="12,0,0,0" FontSize="11"
+                               VerticalAlignment="Center" TextTrimming="CharacterEllipsis" MaxWidth="320"/>
+                </StackPanel>
+            </DockPanel>
+        </Border>
+
+        <!-- Durum çubuğu -->
+        <Border DockPanel.Dock="Bottom" Background="{StaticResource Panel}" BorderBrush="{StaticResource Border}" BorderThickness="0,1,0,0" Padding="12,4">
+            <DockPanel>
+                <TextBlock x:Name="CoordText" DockPanel.Dock="Right" Foreground="{StaticResource Muted}"/>
+                <TextBlock x:Name="StatusText" Foreground="{StaticResource Muted}" Text="Hazır"/>
+            </DockPanel>
+        </Border>
+
+        <!-- Sol menü -->
+        <Border DockPanel.Dock="Left" Width="86" Background="{StaticResource Panel}" BorderBrush="{StaticResource Border}" BorderThickness="0,0,1,0" Padding="0,10">
+            <StackPanel>
+                <RadioButton x:Name="NavHome" Style="{StaticResource NavButton}" GroupName="nav" IsChecked="True" Checked="Nav_Checked">
+                    <StackPanel><TextBlock Text="🏠" FontSize="20" HorizontalAlignment="Center"/><TextBlock Text="Başlangıç" FontSize="11" HorizontalAlignment="Center" Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=RadioButton}}"/></StackPanel>
+                </RadioButton>
+                <RadioButton x:Name="NavMap" Style="{StaticResource NavButton}" GroupName="nav" Checked="Nav_Checked" IsEnabled="False">
+                    <StackPanel><TextBlock Text="🗺" FontSize="20" HorizontalAlignment="Center"/><TextBlock Text="Harita" FontSize="11" HorizontalAlignment="Center" Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=RadioButton}}"/></StackPanel>
+                </RadioButton>
+                <RadioButton x:Name="Nav3D" Style="{StaticResource NavButton}" GroupName="nav" Checked="Nav_Checked" IsEnabled="False">
+                    <StackPanel><TextBlock Text="🧊" FontSize="20" HorizontalAlignment="Center"/><TextBlock Text="3D Görünüm" FontSize="11" HorizontalAlignment="Center" Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=RadioButton}}"/></StackPanel>
+                </RadioButton>
+                <RadioButton x:Name="NavPlayers" Style="{StaticResource NavButton}" GroupName="nav" Checked="Nav_Checked" IsEnabled="False">
+                    <StackPanel><TextBlock Text="👤" FontSize="20" HorizontalAlignment="Center"/><TextBlock Text="Oyuncular" FontSize="11" HorizontalAlignment="Center" Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=RadioButton}}"/></StackPanel>
+                </RadioButton>
+                <RadioButton x:Name="NavSettings" Style="{StaticResource NavButton}" GroupName="nav" Checked="Nav_Checked" IsEnabled="False">
+                    <StackPanel><TextBlock Text="⚙" FontSize="20" HorizontalAlignment="Center"/><TextBlock Text="Ayarlar" FontSize="11" HorizontalAlignment="Center" Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=RadioButton}}"/></StackPanel>
+                </RadioButton>
+            </StackPanel>
+        </Border>
+
+        <!-- Sayfalar -->
+        <Grid>
+            <!-- BAŞLANGIÇ -->
+            <Grid x:Name="HomePage">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel MaxWidth="980" Margin="40,36">
+                        <DockPanel Margin="0,0,0,26">
+                            <Image DockPanel.Dock="Left" Source="Assets/logo.png" Width="150" Height="150" Margin="0,0,26,0"
+                                   RenderOptions.BitmapScalingMode="HighQuality"/>
+                            <StackPanel VerticalAlignment="Center">
+                                <TextBlock Text="Hoş geldin 👋" Style="{StaticResource PageTitle}" FontSize="30"/>
+                                <TextBlock Text="Java ve Bedrock dünyalarını incele, düzenle; oyuncu envanterlerini, sandıkları ve oyun ayarlarını yönet, Minecraft motoruyla yeni chunk'lar üret."
+                                           Foreground="{StaticResource Muted}" Margin="0,8,0,0" FontSize="14" TextWrapping="Wrap"/>
+                            </StackPanel>
+                        </DockPanel>
+
+                        <Border Style="{StaticResource CardBorder}" Padding="28" BorderBrush="#3B5A8F" Background="#1F2A3D">
+                            <DockPanel>
+                                <Button DockPanel.Dock="Right" Content="📂  Dünya dosyası aç" Style="{StaticResource Primary}" Click="OpenWorld_Click"
+                                        Padding="22,12" FontSize="14" VerticalAlignment="Center" Margin="0"/>
+                                <StackPanel>
+                                    <TextBlock Text=".mcworld, .zip veya level.dat dosyasını buraya sürükle" FontSize="17" FontWeight="SemiBold"/>
+                                    <TextBlock Text="Orijinal dosyaya dokunulmaz: çalışma kopyası üzerinde düzenlenir, istediğinde Dışa Aktar ile geri alırsın."
+                                               Foreground="{StaticResource Muted}" Margin="0,6,0,0" TextWrapping="Wrap"/>
+                                </StackPanel>
+                            </DockPanel>
+                        </Border>
+
+                        <DockPanel Margin="0,28,0,10">
+                            <Button DockPanel.Dock="Right" Content="↻ Yenile" Click="RefreshInstalled_Click" Margin="0"/>
+                            <TextBlock Text="BU BİLGİSAYARDAKİ DÜNYALAR" Style="{StaticResource Header}" VerticalAlignment="Center" Margin="0"/>
+                        </DockPanel>
+                        <Border Style="{StaticResource CardBorder}" Padding="8">
+                            <ListBox x:Name="InstalledList" MinHeight="120" MaxHeight="420" MouseDoubleClick="InstalledList_DoubleClick"
+                                     ScrollViewer.HorizontalScrollBarVisibility="Disabled" ToolTip="Çift tıkla: aç">
+                                <ListBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <DockPanel Margin="4,4">
+                                            <Border DockPanel.Dock="Left" Width="36" Height="36" CornerRadius="8" Background="#2D3A52" Margin="0,0,12,0">
+                                                <TextBlock Text="🌍" FontSize="18" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                            </Border>
+                                            <StackPanel VerticalAlignment="Center">
+                                                <TextBlock Text="{Binding Name}" FontWeight="SemiBold" FontSize="14"/>
+                                                <TextBlock Text="{Binding Detail}" FontSize="11" Foreground="#8C8C99"/>
+                                            </StackPanel>
+                                        </DockPanel>
+                                    </DataTemplate>
+                                </ListBox.ItemTemplate>
+                            </ListBox>
+                        </Border>
+                        <TextBlock x:Name="InstalledHint" Foreground="{StaticResource Muted}" FontSize="11" Margin="4,8,0,0" TextWrapping="Wrap"
+                                   Text="Bedrock dünyaları çalışma kopyasına alınarak açılır; oyundaki dünya değişmez. Java dünyaları yerinde düzenlenir, ilk kayıttan önce otomatik zip yedeği alınır."/>
+                    </StackPanel>
+                </ScrollViewer>
+            </Grid>
+
+            <!-- HARİTA -->
+            <DockPanel x:Name="MapPage" Visibility="Collapsed">
+                <Border DockPanel.Dock="Top" Background="{StaticResource Panel}" BorderBrush="{StaticResource Border}" BorderThickness="0,0,0,1" Padding="12,8">
+                    <StackPanel Orientation="Horizontal">
+                        <ComboBox x:Name="DimensionBox" Width="140" SelectionChanged="Dimension_Changed" IsEnabled="False" Margin="0,0,10,0">
+                            <ComboBoxItem Content="🌍  Overworld" IsSelected="True"/>
+                            <ComboBoxItem Content="🔥  Nether"/>
+                            <ComboBoxItem Content="🌌  The End"/>
+                        </ComboBox>
+                        <Button Content="＋" Click="ZoomIn_Click" ToolTip="Yakınlaştır"/>
+                        <Button Content="－" Click="ZoomOut_Click" ToolTip="Uzaklaştır"/>
+                        <Button Content="Seçimi temizle" Click="ClearSelection_Click" ToolTip="Esc"/>
+                        <TextBlock Foreground="{StaticResource Muted}" FontSize="11" VerticalAlignment="Center" Margin="14,0,0,0"
+                                   Text="Sol tık: seç  •  Sürükle: alan  •  Shift: ekle  •  Ctrl: çıkar  •  Çift tık: incele  •  Sağ tık sürükle: kaydır  •  Tekerlek: yakınlaştır"/>
+                    </StackPanel>
+                </Border>
+
+                <Border DockPanel.Dock="Right" Width="290" Background="{StaticResource Panel}" BorderBrush="{StaticResource Border}" BorderThickness="1,0,0,0">
+                    <ScrollViewer VerticalScrollBarVisibility="Auto">
+                        <StackPanel Margin="14">
+                            <TextBlock Text="SEÇİM" Style="{StaticResource Header}"/>
+                            <TextBlock x:Name="SelectionText" Text="Seçili chunk yok" FontSize="15" FontWeight="SemiBold" Margin="0,0,0,16"/>
+
+                            <TextBlock Text="İNCELE" Style="{StaticResource Header}"/>
+                            <Button x:Name="InspectBtn" Content="🔍  Chunk Denetçisi" Style="{StaticResource Action}" Click="Inspect_Click"
+                                    ToolTip="Katman katman incele, blok düzenle, sandık aç (çift tık)"/>
+                            <Button x:Name="Show3DBtn" Content="🧊  3D'de göster" Style="{StaticResource Action}" Click="Show3D_Click" Margin="0,0,0,16"/>
+
+                            <TextBlock Text="DÜZENLE" Style="{StaticResource Header}"/>
+                            <Button x:Name="GenerateBtn" Content="🌱  Chunk üret" Style="{StaticResource Action}" Click="Generate_Click"
+                                    ToolTip="Seçili alana düz / boş / okyanus / tepe / dağ arazisi üret"/>
+                            <Button x:Name="ReplaceBtn" Content="🔁  Blok bul / değiştir" Style="{StaticResource Action}" Click="Replace_Click" ToolTip="Ctrl+H"/>
+                            <Button x:Name="CopyBtn" Content="📋  Kopyala" Style="{StaticResource Action}" Click="Copy_Click" ToolTip="Ctrl+C"/>
+                            <Button x:Name="PasteBtn" Content="📥  Yapıştır" Style="{StaticResource Action}" Click="Paste_Click"
+                                    ToolTip="Seçimin sol üst chunk'ından başlayarak yapıştırır (Ctrl+V)"/>
+                            <Button x:Name="DeleteBtn" Content="🗑  Chunk'ları sil" Style="{StaticResource Action}" Click="Delete_Click"
+                                    ToolTip="Oyun bu alanları yeniden oluşturur (Del)"/>
+                            <TextBlock x:Name="ClipboardText" FontSize="11" Foreground="{StaticResource Muted}" TextWrapping="Wrap" Margin="0,2,0,16"/>
+
+                            <TextBlock Text="CHUNK BİLGİSİ" Style="{StaticResource Header}"/>
+                            <Border Background="{StaticResource Card}" CornerRadius="8" Padding="10">
+                                <TextBlock x:Name="ChunkInfo" Text="Bilgi için haritada bir chunk'a tıkla" TextWrapping="Wrap"
+                                           FontFamily="Consolas" FontSize="12" Foreground="#C8C8D0"/>
+                            </Border>
+                        </StackPanel>
+                    </ScrollViewer>
+                </Border>
+
+                <Grid>
+                    <map:WorldMapView x:Name="Map"/>
+                </Grid>
+            </DockPanel>
+
+            <ContentControl x:Name="View3DHost" Visibility="Collapsed"/>
+            <ContentControl x:Name="PlayersHost" Visibility="Collapsed"/>
+            <ContentControl x:Name="SettingsHost" Visibility="Collapsed"/>
+
+            <!-- Sürükle-bırak ipucu -->
+            <Border x:Name="DropHint" Visibility="Collapsed" Margin="24" CornerRadius="12" IsHitTestVisible="False"
+                    Background="#402F6FD6" BorderBrush="#4C8DFF" BorderThickness="2">
+                <TextBlock Text="Dünyayı açmak için bırak" FontSize="24" FontWeight="SemiBold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+            </Border>
+
+            <!-- Yükleniyor -->
+            <Border x:Name="LoadingOverlay" Visibility="Collapsed" Background="#C0101014">
+                <Border Style="{StaticResource CardBorder}" HorizontalAlignment="Center" VerticalAlignment="Center" Width="400" Padding="24">
+                    <StackPanel>
+                        <TextBlock x:Name="LoadingText" Text="Yükleniyor…" FontSize="15" HorizontalAlignment="Center" Margin="0,0,0,14" TextWrapping="Wrap"/>
+                        <ProgressBar IsIndeterminate="True" Height="4" Foreground="{StaticResource Accent}" Background="#2D2D36" BorderThickness="0"/>
+                    </StackPanel>
+                </Border>
+            </Border>
+        </Grid>
+    </DockPanel>
+</Window>
