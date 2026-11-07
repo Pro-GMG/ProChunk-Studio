@@ -1,0 +1,175 @@
+<Window x:Class="ProChunk.App.Inspector.InspectorWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:ins="clr-namespace:ProChunk.App.Inspector"
+        Title="Chunk Denetçisi" Height="760" Width="1120" MinWidth="820" MinHeight="520"
+        Background="#1B1B1F" Foreground="#E6E6EA" FontFamily="Segoe UI" FontSize="13"
+        WindowStartupLocation="CenterOwner">
+
+    <Window.Resources>
+        <Style TargetType="TextBlock"><Setter Property="Foreground" Value="#E6E6EA"/></Style>
+        <Style x:Key="Header" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Foreground" Value="#8A8A96"/>
+            <Setter Property="Margin" Value="0,10,0,6"/>
+        </Style>
+        <Style TargetType="Button">
+            <Setter Property="Foreground" Value="#E6E6EA"/>
+            <Setter Property="Background" Value="#2D2D35"/>
+            <Setter Property="Padding" Value="10,5"/>
+            <Setter Property="Margin" Value="0,0,6,0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="b" Background="{TemplateBinding Background}" CornerRadius="5"
+                                Padding="{TemplateBinding Padding}" BorderBrush="#3A3A44" BorderThickness="1">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="b" Property="Background" Value="#3A3A46"/></Trigger>
+                            <Trigger Property="IsEnabled" Value="False"><Setter TargetName="b" Property="Opacity" Value="0.4"/></Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style TargetType="RadioButton">
+            <Setter Property="Foreground" Value="#E6E6EA"/>
+            <Setter Property="Margin" Value="0,0,4,0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="RadioButton">
+                        <Border x:Name="b" Background="#2D2D35" CornerRadius="5" Padding="10,5" BorderBrush="#3A3A44" BorderThickness="1">
+                            <ContentPresenter HorizontalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="b" Property="Background" Value="#2F6FD6"/>
+                                <Setter TargetName="b" Property="BorderBrush" Value="#3B8EFF"/>
+                            </Trigger>
+                            <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="b" Property="BorderBrush" Value="#6CAEFF"/></Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
+
+    <DockPanel>
+        <!-- Başlık + gezinme -->
+        <Border DockPanel.Dock="Top" Background="#222228" BorderBrush="#33333C" BorderThickness="0,0,0,1" Padding="12,8">
+            <DockPanel>
+                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                    <TextBlock Text="Komşu chunk:" Foreground="#8A8A96" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                    <Button Content="◀ Batı" Click="West_Click"/>
+                    <Button Content="▲ Kuzey" Click="North_Click"/>
+                    <Button Content="▼ Güney" Click="South_Click"/>
+                    <Button Content="Doğu ▶" Click="East_Click" Margin="0"/>
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <TextBlock x:Name="TitleText" FontSize="16" FontWeight="SemiBold"/>
+                    <TextBlock x:Name="SubtitleText" Foreground="#8A8A96" Margin="12,0,0,0" VerticalAlignment="Center"/>
+                </StackPanel>
+            </DockPanel>
+        </Border>
+
+        <!-- Alt: fare altındaki blok -->
+        <Border DockPanel.Dock="Bottom" Background="#222228" BorderBrush="#33333C" BorderThickness="0,1,0,0" Padding="12,6">
+            <TextBlock x:Name="HoverText" FontFamily="Consolas" Text="Bir bloğun üzerine gel" Foreground="#C8C8D0"/>
+        </Border>
+
+        <!-- Sağ: blok istatistikleri -->
+        <Border DockPanel.Dock="Right" Width="300" Background="#222228" BorderBrush="#33333C" BorderThickness="1,0,0,0" Padding="12,2,12,12">
+            <DockPanel>
+                <TextBlock DockPanel.Dock="Top" Text="BU CHUNK'TAKİ BLOKLAR" Style="{StaticResource Header}"/>
+                <TextBlock DockPanel.Dock="Top" x:Name="StatsSummary" Foreground="#8A8A96" FontSize="11" Margin="0,0,0,6"/>
+                <TextBox DockPanel.Dock="Top" x:Name="StatsFilter" Margin="0,0,0,6" Padding="4"
+                         Background="#2D2D35" Foreground="#E6E6EA" BorderBrush="#3A3A44" TextChanged="StatsFilter_TextChanged"
+                         ToolTip="Blok adına göre süz"/>
+                <StackPanel DockPanel.Dock="Bottom" Margin="0,8,0,0">
+                    <TextBlock TextWrapping="Wrap" FontSize="11" Foreground="#8A8A96"
+                               Text="Tıkla: kesitte sarı ile vurgula  •  Çift tıkla: fırça olarak seç"/>
+                    <TextBlock x:Name="ContainersHeader" Text="KONTEYNERLER" Style="{StaticResource Header}" Margin="0,14,0,6"/>
+                    <ListBox x:Name="ContainersList" MaxHeight="170" MouseDoubleClick="ContainersList_DoubleClick"
+                             ToolTip="Çift tıkla: sandık / shulker içeriğini düzenle">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <DockPanel>
+                                    <TextBlock DockPanel.Dock="Right" Text="{Binding CountText}" Foreground="#8A8A96" Margin="8,0,0,0"/>
+                                    <TextBlock Text="{Binding Display}" TextTrimming="CharacterEllipsis"/>
+                                </DockPanel>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                </StackPanel>
+                <ListBox x:Name="StatsList" Background="Transparent" BorderThickness="0" Foreground="#E6E6EA"
+                         SelectionChanged="StatsList_SelectionChanged" MouseDoubleClick="StatsList_DoubleClick"
+                         ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <DockPanel Margin="0,2">
+                                <Border DockPanel.Dock="Left" Width="14" Height="14" CornerRadius="2" Margin="0,0,8,0"
+                                        Background="{Binding Swatch}" BorderBrush="#44444E" BorderThickness="1"/>
+                                <TextBlock DockPanel.Dock="Right" Text="{Binding CountText}" Foreground="#8A8A96" Margin="8,0,0,0"/>
+                                <TextBlock Text="{Binding Display}" TextTrimming="CharacterEllipsis" ToolTip="{Binding State}"/>
+                            </DockPanel>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+            </DockPanel>
+        </Border>
+
+        <!-- Sol: görünüm + araçlar -->
+        <Border DockPanel.Dock="Left" Width="250" Background="#222228" BorderBrush="#33333C" BorderThickness="0,0,1,0" Padding="12,2,12,12">
+            <StackPanel>
+                <TextBlock Text="GÖRÜNÜM" Style="{StaticResource Header}"/>
+                <WrapPanel>
+                    <RadioButton x:Name="ViewTop" Content="Üstten (Y)" IsChecked="True" Checked="View_Changed" Margin="0,0,4,4"/>
+                    <RadioButton x:Name="ViewZ" Content="Yandan Z" Checked="View_Changed" Margin="0,0,4,4"/>
+                    <RadioButton x:Name="ViewX" Content="Yandan X" Checked="View_Changed" Margin="0,0,0,4"/>
+                </WrapPanel>
+
+                <DockPanel Margin="0,10,0,4">
+                    <TextBlock x:Name="SliceLabel" Text="Katman Y" Foreground="#8A8A96"/>
+                    <TextBlock x:Name="SliceValue" HorizontalAlignment="Right" FontWeight="SemiBold" FontFamily="Consolas"/>
+                </DockPanel>
+                <Slider x:Name="SliceSlider" IsSnapToTickEnabled="True" TickFrequency="1" SmallChange="1" LargeChange="8"
+                        ValueChanged="Slice_Changed"/>
+                <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
+                    <Button Content="▼ Aşağı" Click="SliceDown_Click"/>
+                    <Button Content="▲ Yukarı" Click="SliceUp_Click"/>
+                    <Button Content="Yüzey" Click="SliceSurface_Click" Margin="0" ToolTip="En yüksek bloğa git"/>
+                </StackPanel>
+
+                <TextBlock Text="ARAÇ" Style="{StaticResource Header}" Margin="0,18,0,6"/>
+                <WrapPanel>
+                    <RadioButton x:Name="ToolLook" Content="🔍 Bak" IsChecked="True" Margin="0,0,4,4"/>
+                    <RadioButton x:Name="ToolPencil" Content="✏ Kalem" Margin="0,0,4,4"/>
+                    <RadioButton x:Name="ToolPick" Content="💧 Damlalık" Margin="0,0,4,4"/>
+                    <RadioButton x:Name="ToolErase" Content="🧽 Silgi" Margin="0,0,0,4"/>
+                </WrapPanel>
+
+                <TextBlock Text="FIRÇA BLOĞU" Style="{StaticResource Header}"/>
+                <ComboBox x:Name="BrushBox" IsEditable="True" Text="minecraft:stone" Padding="4"/>
+                <TextBlock Text="Örn: minecraft:diamond_block veya oak_stairs[facing=east]" TextWrapping="Wrap"
+                           FontSize="11" Foreground="#8A8A96" Margin="0,4,0,0"/>
+
+                <TextBlock Text="KESİT İŞLEMLERİ" Style="{StaticResource Header}" Margin="0,18,0,6"/>
+                <Button Content="Bu kesiti fırçayla doldur" Click="FillSlice_Click" Margin="0,0,0,6" HorizontalAlignment="Stretch"/>
+                <Button Content="Bu kesiti temizle (hava)" Click="ClearSlice_Click" Margin="0,0,0,6"/>
+                <Button Content="Kesitte vurgulananı fırçayla değiştir" Click="ReplaceInSlice_Click" Margin="0"/>
+
+                <TextBlock x:Name="EditHint" TextWrapping="Wrap" FontSize="11" Foreground="#8A8A96" Margin="0,16,0,0"
+                           Text="Değişiklikler hemen haritaya yansır. Ctrl+Z: geri al  •  Ctrl+Y: yinele  •  Ctrl+S: diske kaydet  •  PageUp/PageDown: katman değiştir"/>
+            </StackPanel>
+        </Border>
+
+        <!-- Orta: kesit -->
+        <ScrollViewer x:Name="SliceScroll" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto" Background="#16161A">
+            <ins:SliceView x:Name="Slice" Margin="24" HorizontalAlignment="Center" VerticalAlignment="Top"/>
+        </ScrollViewer>
+    </DockPanel>
+</Window>

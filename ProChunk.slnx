@@ -1,0 +1,11 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/ProChunk.App/ProChunk.App.csproj" />
+    <Project Path="src/ProChunk.Bedrock/ProChunk.Bedrock.csproj" />
+    <Project Path="src/ProChunk.Core/ProChunk.Core.csproj" />
+    <Project Path="src/ProChunk.Java/ProChunk.Java.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/ProChunk.Tests/ProChunk.Tests.csproj" />
+  </Folder>
+</Solution>
