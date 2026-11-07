@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ProChunk Studio — Minecraft Dünya Yöneticisi</title>
+<meta name="description" content="Java ve Bedrock için ücretsiz Minecraft dünya yöneticisi: harita, 3D görünüm, chunk düzenleme, envanter ve sandık düzenleme.">
+<link rel="icon" href="logo.png">
+<style>
+:root{--bg:#0b1020;--card:#131a30;--line:#24304f;--text:#e8ecf7;--mute:#9aa6c4;--acc:#4f8cff;--acc2:#36d399}
+*{box-sizing:border-box;margin:0}
+body{font-family:"Segoe UI",system-ui,sans-serif;background:radial-gradient(ellipse at top,#16224a 0%,var(--bg) 60%);color:var(--text);line-height:1.6;min-height:100vh}
+a{color:inherit;text-decoration:none}
+.wrap{max-width:1080px;margin:0 auto;padding:0 24px}
+nav{display:flex;align-items:center;justify-content:space-between;padding:20px 0}
+.brand{display:flex;align-items:center;gap:10px;font-weight:700;font-size:20px}
+.brand img{width:36px;height:36px}
+.brand b{color:var(--acc)}
+nav .links a{margin-left:22px;color:var(--mute)}
+nav .links a:hover{color:var(--text)}
+.hero{display:grid;grid-template-columns:1.2fr .8fr;gap:40px;align-items:center;padding:60px 0 80px}
+h1{font-size:48px;line-height:1.15;margin-bottom:18px}
+h1 span{background:linear-gradient(90deg,var(--acc),var(--acc2));-webkit-background-clip:text;background-clip:text;color:transparent}
+.lead{color:var(--mute);font-size:18px;margin-bottom:30px}
+.btns{display:flex;gap:14px;flex-wrap:wrap}
+.btn{display:inline-flex;align-items:center;gap:10px;padding:14px 26px;border-radius:12px;font-weight:600;transition:.15s}
+.btn.primary{background:linear-gradient(135deg,var(--acc),#3a6fe0);box-shadow:0 8px 30px #4f8cff55}
+.btn.primary:hover{transform:translateY(-2px)}
+.btn.ghost{border:1px solid var(--line);color:var(--mute)}
+.btn.ghost:hover{color:var(--text);border-color:var(--acc)}
+.note{color:var(--mute);font-size:13px;margin-top:14px}
+.hero img{width:100%;max-width:340px;justify-self:center;filter:drop-shadow(0 20px 60px #4f8cff44)}
+h2{font-size:30px;text-align:center;margin-bottom:36px}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-bottom:90px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:24px}
+.card .ic{font-size:26px;margin-bottom:10px}
+.card h3{font-size:17px;margin-bottom:6px}
+.card p{color:var(--mute);font-size:14px}
+.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-bottom:90px;counter-reset:s}
+.steps .card{counter-increment:s}
+.steps .card h3::before{content:counter(s);display:inline-grid;place-items:center;width:28px;height:28px;border-radius:50%;background:var(--acc);margin-right:10px;font-size:14px}
+.cta{text-align:center;background:var(--card);border:1px solid var(--line);border-radius:20px;padding:50px 24px;margin-bottom:60px}
+.cta p{color:var(--mute);margin:-20px 0 26px}
+footer{text-align:center;color:var(--mute);font-size:13px;padding:30px 0;border-top:1px solid var(--line)}
+@media(max-width:820px){.hero{grid-template-columns:1fr;text-align:center}.btns{justify-content:center}.hero img{order:-1;max-width:200px}.grid,.steps{grid-template-columns:1fr}h1{font-size:36px}nav .links{display:none}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <nav>
+    <a class="brand" href="#"><img src="logo.png" alt="">Pro<b>Chunk</b>&nbsp;Studio</a>
+    <div class="links"><a href="#ozellikler">Özellikler</a><a href="#nasil">Nasıl kullanılır</a><a href="https://github.com/Pro-GMG/ProChunk-Studio">GitHub</a></div>
+  </nav>
+
+  <section class="hero">
+    <div>
+      <h1>Minecraft dünyalarını <span>tek yerden</span> yönet.</h1>
+      <p class="lead">Java ve Bedrock için ücretsiz dünya yöneticisi. Haritada gez, chunk'ları düzenle, envanterleri ve sandıkları değiştir, eksik chunk'ları Minecraft'ın kendi motoruyla üret.</p>
+      <div class="btns">
+        <a class="btn primary" href="https://github.com/Pro-GMG/ProChunk-Studio/releases/latest/download/ProChunkStudio.exe">⬇ Windows için indir</a>
+        <a class="btn ghost" href="https://github.com/Pro-GMG/ProChunk-Studio">Kaynak kodu</a>
+      </div>
+      <p class="note">Windows 10/11 · 64 bit · Kurulum gerektirmez · ~65 MB</p>
+    </div>
+    <img src="logo.png" alt="ProChunk Studio logosu">
+  </section>
+
+  <h2 id="ozellikler">Neler yapabilirsin?</h2>
+  <div class="grid">
+    <div class="card"><div class="ic">🗺️</div><h3>2D harita</h3><p>Dünyanın tamamını kuşbakışı gör, yakınlaştır, chunk'ları tek tek ya da toplu seç.</p></div>
+    <div class="card"><div class="ic">🧊</div><h3>3D görünüm</h3><p>Seçtiğin bölgeyi üç boyutlu incele, katman katman bloklara bak.</p></div>
+    <div class="card"><div class="ic">✂️</div><h3>Chunk düzenleme</h3><p>Sil, kopyala, yapıştır, blok değiştir. Her adım geri alınabilir.</p></div>
+    <div class="card"><div class="ic">🎒</div><h3>Oyuncu envanteri</h3><p>Envanter, zırh ve Ender Chest içeriklerini eşya simgeleriyle düzenle.</p></div>
+    <div class="card"><div class="ic">📦</div><h3>Sandık ve Shulker</h3><p>Dünyadaki sandıkların ve Shulker kutularının içini doğrudan değiştir.</p></div>
+    <div class="card"><div class="ic">⚙️</div><h3>Oyun ayarları</h3><p>level.dat, oyun kuralları ve gelişmiş NBT düzenleyici.</p></div>
+    <div class="card"><div class="ic">🏗️</div><h3>Gerçek motorla üretim</h3><p>Chunk'ları Bedrock Dedicated Server veya resmi Java sunucusuyla yeniden üret.</p></div>
+    <div class="card"><div class="ic">🔄</div><h3>Java + Bedrock</h3><p>İki sürümü de destekler; .mcworld dosyalarını doğrudan açar.</p></div>
+    <div class="card"><div class="ic">🛡️</div><h3>Güvenli çalışma</h3><p>Değişiklikler sen kaydedene kadar dünyana yazılmaz.</p></div>
+  </div>
+
+  <h2 id="nasil">Üç adımda başla</h2>
+  <div class="steps">
+    <div class="card"><h3>İndir</h3><p>ProChunkStudio.exe dosyasını indir ve çalıştır. Kurulum yok.</p></div>
+    <div class="card"><h3>Dünyanı aç</h3><p>Bilgisayarındaki dünyalar otomatik listelenir ya da bir .mcworld / .zip seç.</p></div>
+    <div class="card"><h3>Düzenle ve kaydet</h3><p>Değişikliklerini yap, kaydet ya da yeni bir .mcworld olarak dışa aktar.</p></div>
+  </div>
+
+  <div class="cta">
+    <h2>Hazır mısın?</h2>
+    <p>Başlamadan önce dünyanın bir yedeğini almanı öneririz.</p>
+    <a class="btn primary" href="https://github.com/Pro-GMG/ProChunk-Studio/releases/latest/download/ProChunkStudio.exe">⬇ ProChunk Studio'yu indir</a>
+  </div>
+
+  <footer>ProChunk Studio · Mojang veya Microsoft ile bağlantılı değildir. Minecraft, Mojang AB'nin ticari markasıdır.</footer>
+</div>
+</body>
+</html>
