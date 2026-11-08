@@ -16,6 +16,12 @@ public sealed class SliceView : FrameworkElement
 
     public string? Highlight { get; set; }
     public bool ShowGrid { get; set; } = true;
+    /// <summary>Blok durumundan doku; null dönerse düz renk çizilir.</summary>
+    public Func<string, ImageSource?>? Texture { get; set; }
+    /// <summary>Hücre karartma düzeyi (0 = yok … 4 = en koyu); seçili katmanın altındaki bloklar için.</summary>
+    public Func<int, int, int>? Dim { get; set; }
+    /// <summary>Saydam dokuların arkasında görünecek blok (üstten görünümde alttaki zemin).</summary>
+    public Func<int, int, string?>? Backdrop { get; set; }
     /// <summary>Yandan görünümde satır etiketleri için (satır → Y değeri).</summary>
     public Func<int, string>? RowLabel { get; set; }
 
@@ -29,10 +35,12 @@ public sealed class SliceView : FrameworkElement
     private static readonly Brush AirBrush = Freeze(new SolidColorBrush(Color.FromRgb(0x1A, 0x1A, 0x1F)));
     private static readonly Dictionary<uint, Brush> Brushes_ = new();
     private const double LabelWidth = 36;
+    private static readonly Brush[] DimBrushes = Enumerable.Range(0, 5)
+        .Select(i => (Brush)Freeze(new SolidColorBrush(Color.FromArgb((byte)(i * 34), 0, 0, 0)))).ToArray();
 
     private static T Freeze<T>(T f) where T : Freezable { f.Freeze(); return f; }
 
-    public SliceView() { RenderOptions.SetEdgeMode(this, EdgeMode.Aliased); }
+    public SliceView() { RenderOptions.SetEdgeMode(this, EdgeMode.Aliased); RenderOptions.SetBitmapScalingMode(this, BitmapScalingMode.NearestNeighbor); }
 
     public void SetContent(int cols, int rows, double cellSize, Func<int, int, string> cell)
     {
@@ -70,7 +78,15 @@ public sealed class SliceView : FrameworkElement
             {
                 var state = _cell(u, v);
                 var r = new Rect(l + u * s, v * s, s, s);
-                dc.DrawRectangle(BrushFor(state), ShowGrid && s >= 8 ? GridPen : null, r);
+                var image = Texture?.Invoke(state);
+                dc.DrawRectangle(image is null ? BrushFor(state) : AirBrush, null, r);
+                if (image is not null)
+                {
+                    if (Backdrop?.Invoke(u, v) is { } under && Texture?.Invoke(under) is { } underImage) dc.DrawImage(underImage, r);
+                    dc.DrawImage(image, r);
+                }
+                if (Dim?.Invoke(u, v) is > 0 and var level) dc.DrawRectangle(DimBrushes[Math.Min(level, 4)], null, r);
+                if (ShowGrid && s >= 8) dc.DrawRectangle(null, GridPen, r);
                 if (Highlight is not null && state == Highlight)
                     dc.DrawRectangle(null, HighlightPen, new Rect(r.X + 1, r.Y + 1, s - 2, s - 2));
             }

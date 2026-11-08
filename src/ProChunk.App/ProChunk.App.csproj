@@ -20,7 +20,7 @@
     <AssemblyName>ProChunkStudio</AssemblyName>
     <ApplicationIcon>Assets\app.ico</ApplicationIcon>
     <Product>ProChunk Studio</Product>
-    <Version>0.3.0</Version>
+    <Version>0.4.0</Version>
   </PropertyGroup>
 
   <ItemGroup>

@@ -2,6 +2,7 @@
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Media.Imaging;
 using System.Windows.Media.Media3D;
 using HelixToolkit.Wpf;
 using ProChunk.App.Inspector;
@@ -269,10 +270,10 @@ internal static class Mesher
             return vols.TryGetValue((wx >> 4, wz >> 4), out var v) ? v.GetBlock(wx & 15, y, wz & 15) : BlockState.Air;
         }
 
-        var builders = new Dictionary<uint, Quads>();
-        Quads B(uint key)
+        var builders = new Dictionary<(uint Key, BitmapSource? Tex), Quads>();
+        Quads B(uint key, BitmapSource? tex)
         {
-            if (!builders.TryGetValue(key, out var mb)) builders[key] = mb = new Quads();
+            if (!builders.TryGetValue((key, tex), out var mb)) builders[(key, tex)] = mb = new Quads();
             return mb;
         }
 
@@ -292,6 +293,7 @@ internal static class Mesher
             if (k is Kind.Air or Kind.Decor || (k == Kind.Water && !water)) continue;
             int wx = cx * 16 + x, wz = cz * 16 + z;
             uint color = k == Kind.Water ? 0x003F76E4u : BlockColors.Get(s) & 0x00FFFFFF;
+            var tex = Items.BlockTextures.Get(k == Kind.Water ? "minecraft:water" : s);
 
             foreach (var (dx, dy, dz, shade) in dirs)
             {
@@ -302,17 +304,28 @@ internal static class Mesher
                 if (!visible) continue;
 
                 uint key = (MapPainter.Shade(color | 0xFF000000, shade) & 0x00FFFFFF) | (k == Kind.Water ? 1u << 24 : k == Kind.Glass ? 2u << 24 : 0);
-                AddFace(B(key), wx - ox, y, wz - oz, dx, dy, dz);
+                var image = tex is null ? null : Items.BlockTextures.Shaded(dy > 0 ? tex.Top : dy < 0 ? tex.Bottom : tex.Side, shade);
+                if (image is not null) key &= 0xFF000000;
+                AddFace(B(key, image), wx - ox, y, wz - oz, dx, dy, dz);
                 faces++;
             }
         }
 
         if (faces == 0) return (null, 0);
         var group = new Model3DGroup();
-        foreach (var (key, mb) in builders)
+        // Saydam yüzler en sonda çizilir
+        foreach (var ((key, tex), mb) in builders.OrderBy(kv => kv.Key.Key >> 24).Select(kv => (kv.Key, kv.Value)))
         {
             byte alpha = (key >> 24) switch { 1 => 150, 2 => 190, _ => 255 };
-            var brush = new SolidColorBrush(Color.FromArgb(alpha, (byte)(key >> 16), (byte)(key >> 8), (byte)key));
+            Brush brush;
+            if (tex is not null)
+                brush = new ImageBrush(tex)
+                {
+                    ViewportUnits = BrushMappingMode.Absolute, Viewport = new Rect(0, 0, 1, 1), Stretch = Stretch.Fill,
+                    Opacity = (key >> 24) == 1 ? 0.65 : 1,
+                };
+            else
+                brush = new SolidColorBrush(Color.FromArgb(alpha, (byte)(key >> 16), (byte)(key >> 8), (byte)key));
             brush.Freeze();
             var mat = new DiffuseMaterial(brush);
             mat.Freeze();
@@ -329,15 +342,17 @@ internal static class Mesher
     {
         private readonly Point3DCollection _p = new();
         private readonly Int32Collection _i = new();
+        private readonly PointCollection _uv = new();
         public void AddQuad(Point3D a, Point3D b, Point3D c, Point3D d)
         {
             int n = _p.Count;
             _p.Add(a); _p.Add(b); _p.Add(c); _p.Add(d);
+            _uv.Add(new Point(0, 1)); _uv.Add(new Point(1, 1)); _uv.Add(new Point(1, 0)); _uv.Add(new Point(0, 0));
             _i.Add(n); _i.Add(n + 1); _i.Add(n + 2); _i.Add(n); _i.Add(n + 2); _i.Add(n + 3);
         }
         public MeshGeometry3D ToMesh()
         {
-            var m = new MeshGeometry3D { Positions = _p, TriangleIndices = _i };
+            var m = new MeshGeometry3D { Positions = _p, TriangleIndices = _i, TextureCoordinates = _uv };
             m.Freeze();
             return m;
         }

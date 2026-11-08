@@ -98,9 +98,9 @@ public partial class InspectorWindow : Window
         _stats = counts.OrderByDescending(kv => kv.Value).Select(kv =>
         {
             var c = BlockColors.Get(kv.Key);
-            var b = new SolidColorBrush(BlockColors.IsAir(kv.Key) ? Color.FromRgb(0x1A, 0x1A, 0x1F) : Color.FromRgb((byte)(c >> 16), (byte)(c >> 8), (byte)c));
-            b.Freeze();
-            return new StatItem(kv.Key, kv.Value, b);
+            var solidBrush = new SolidColorBrush(BlockColors.IsAir(kv.Key) ? Color.FromRgb(0x1A, 0x1A, 0x1F) : Color.FromRgb((byte)(c >> 16), (byte)(c >> 8), (byte)c));
+            solidBrush.Freeze();
+            return new StatItem(kv.Key, kv.Value, Items.BlockTextures.Swatch(kv.Key) ?? solidBrush);
         }).ToList();
         int solid = counts.Where(kv => !BlockColors.IsAir(kv.Key)).Sum(kv => kv.Value);
         StatsSummary.Text = $"{counts.Count} farklı durum  •  {solid:N0} katı blok";
@@ -167,6 +167,29 @@ public partial class InspectorWindow : Window
         };
     }
 
+    /// <summary>Hücrede görünen blok: üstten görünümde seçili katmandaki havanın altındaki ilk blok.</summary>
+    private (int X, int Y, int Z) VisibleBlock(int u, int v)
+    {
+        var (x, y, z) = ToBlock(u, v);
+        if (_mode != ViewMode.Top) return (x, y, z);
+        for (int yy = y; yy >= _volume!.MinY; yy--)
+            if (!BlockColors.IsAir(_volume.GetBlock(x, yy, z))) return (x, yy, z);
+        return (x, y, z);
+    }
+
+    /// <summary>Görünen blok saydamsa altındaki ilk opak blok (çimin arkasındaki zemin gibi).</summary>
+    private string? BackdropBlock(int u, int v)
+    {
+        var (x, y, z) = VisibleBlock(u, v);
+        if (Items.BlockTextures.IsOpaque(_volume!.GetBlock(x, y, z))) return null;
+        for (int yy = y - 1; yy >= _volume.MinY; yy--)
+        {
+            var below = _volume.GetBlock(x, yy, z);
+            if (Items.BlockTextures.IsOpaque(below)) return below;
+        }
+        return null;
+    }
+
     private void Redraw()
     {
         if (_volume is null) return;
@@ -174,11 +197,17 @@ public partial class InspectorWindow : Window
         if (_mode == ViewMode.Top)
         {
             Slice.RowLabel = null;
-            Slice.SetContent(16, 16, 34, (u, v) => { var (x, y, z) = ToBlock(u, v); return vol.GetBlock(x, y, z); });
+            Slice.Texture = Items.BlockTextures.Top;
+            Slice.Backdrop = BackdropBlock;
+            Slice.Dim = (u, v) => { int depth = SliceIndex - VisibleBlock(u, v).Y; return depth <= 0 ? 0 : Math.Min(4, 1 + depth / 6); };
+            Slice.SetContent(16, 16, 34, (u, v) => { var (x, y, z) = VisibleBlock(u, v); return vol.GetBlock(x, y, z); });
         }
         else
         {
             int rows = vol.MaxY - vol.MinY + 1;
+            Slice.Texture = Items.BlockTextures.Side;
+            Slice.Backdrop = null;
+            Slice.Dim = null;
             Slice.RowLabel = v => (vol.MaxY - v).ToString();
             Slice.SetContent(16, rows, 14, (u, v) => { var (x, y, z) = ToBlock(u, v); return vol.GetBlock(x, y, z); });
         }
@@ -223,7 +252,7 @@ public partial class InspectorWindow : Window
     private void OnHover(int u, int v)
     {
         if (_volume is null) return;
-        var (x, y, z) = ToBlock(u, v);
+        var (x, y, z) = VisibleBlock(u, v);
         var state = _volume.GetBlock(x, y, z);
         HoverText.Text = $"Yerel {x,2}, {y,4}, {z,2}   •   Dünya {_cx * 16 + x}, {y}, {_cz * 16 + z}   •   {state}"
                          + (Items.ContainerAccess.IsContainerBlock(state) ? "   •   📦 Bak aracıyla tıkla: içeriği aç" : "");
@@ -235,15 +264,16 @@ public partial class InspectorWindow : Window
     {
         if (_volume is null) return;
         var (x, y, z) = ToBlock(u, v);
+        var seen = VisibleBlock(u, v);
         if (ToolLook.IsChecked == true)
         {
-            if (Items.ContainerAccess.IsContainerBlock(_volume.GetBlock(x, y, z)))
-                Items.ContainerAccess.Open(this, _host, _cx * 16 + x, y, _cz * 16 + z);
+            if (Items.ContainerAccess.IsContainerBlock(_volume.GetBlock(seen.X, seen.Y, seen.Z)))
+                Items.ContainerAccess.Open(this, _host, _cx * 16 + seen.X, seen.Y, _cz * 16 + seen.Z);
             return;
         }
         if (ToolPick.IsChecked == true)
         {
-            BrushBox.Text = _volume.GetBlock(x, y, z);
+            BrushBox.Text = _volume.GetBlock(seen.X, seen.Y, seen.Z);
             ToolPencil.IsChecked = true;
             return;
         }

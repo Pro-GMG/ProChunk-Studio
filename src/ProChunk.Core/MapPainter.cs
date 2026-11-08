@@ -20,6 +20,7 @@ public static class MapPainter
             catch { FillChunk(pixels, lx, lz, UnknownChunk); continue; }
             if (v is null) continue;
             if (v.Sections.Count == 0) { FillChunk(pixels, lx, lz, UnknownChunk); continue; }
+            if (v.Sections.Values.All(s => s.Palette.All(BlockColors.IsAir))) continue;   // henüz üretilmemiş: boş bırak
             RenderChunk(v, pixels, heights, lx * 16, lz * 16, 512);
         }
 

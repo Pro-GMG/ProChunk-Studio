@@ -40,6 +40,7 @@ public partial class MainWindow : Window, IEditorHost
     public MainWindow()
     {
         InitializeComponent();
+        Core.BlockColors.Fallback = Items.BlockTextures.AverageColor;
 
         _view3d = new View3DPage(this);
         _players = new PlayersPage(this);

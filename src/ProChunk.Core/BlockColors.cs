@@ -44,11 +44,15 @@ public static class BlockColors
         BlockState.BaseName(state) is "minecraft:water" or "minecraft:flowing_water" or "minecraft:bubble_column" or "minecraft:kelp" or "minecraft:kelp_plant"
             or "minecraft:seagrass" or "minecraft:tall_seagrass";
 
+    /// <summary>Tabloda olmayan bloklar için dış renk kaynağı (ör. gerçek doku ortalaması).</summary>
+    public static Func<string, uint?>? Fallback { get; set; }
+
     public static uint Get(string state)
     {
         var name = BlockState.BaseName(state);
         var n = name.StartsWith("minecraft:", StringComparison.Ordinal) ? name[10..] : name;
         if (Known.TryGetValue(n, out var c)) return c;
+        if (Fallback?.Invoke(name) is { } textured) return textured;
 
         foreach (var (prefix, color) in Dyes)
             if (n.StartsWith(prefix, StringComparison.Ordinal)) return color;

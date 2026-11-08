@@ -38,6 +38,21 @@ public static class ItemIcons
         catch { return null; }
     }
 
+    /// <summary>Jar içinden bir dosyanın baytları; yoksa null.</summary>
+    internal static byte[]? ReadEntry(string path)
+    {
+        if (Jar.Value is not { } jar) return null;
+        lock (JarLock)
+        {
+            var e = jar.GetEntry(path);
+            if (e is null) return null;
+            using var s = e.Open();
+            using var ms = new MemoryStream();
+            s.CopyTo(ms);
+            return ms.ToArray();
+        }
+    }
+
     public static ImageSource Get(string id)
     {
         var name = BlockState.BaseName(id);
@@ -47,6 +62,10 @@ public static class ItemIcons
 
     private static ImageSource Load(string name)
     {
+        // Blok eşyaları: modelden çözülen, renklendirilmiş doku (merdiven, yaprak, çim...)
+        if (ReadEntry($"assets/minecraft/textures/item/{name}.png") is null && BlockTextures.Top("minecraft:" + name) is { } blockTexture)
+            return blockTexture;
+
         if (Jar.Value is { } jar)
         {
             foreach (var path in Candidates(name))

@@ -10,7 +10,7 @@ namespace ProChunk.App.Map;
 /// <summary>Kuşbakışı dünya haritası: kaydırma, yakınlaştırma, chunk seçimi.</summary>
 public sealed class WorldMapView : FrameworkElement
 {
-    private sealed class Tile { public BitmapSource? Bitmap; public bool Loading; }
+    private sealed class Tile { public BitmapSource? Bitmap; public BitmapSource[]? Levels; public bool Loading; }
 
     private IWorld? _world;
     private int _dimension;
@@ -134,7 +134,7 @@ public sealed class WorldMapView : FrameworkElement
             var tl = ToScreen(rx * 512, rz * 512);
             var rect = new Rect(tl.X, tl.Y, 512 * _scale, 512 * _scale);
             var tile = GetTile(rx, rz);
-            if (tile.Bitmap is not null) dc.DrawImage(tile.Bitmap, rect);
+            if (tile.Bitmap is not null) dc.DrawImage(LevelFor(tile), rect);
             else dc.DrawRectangle(Placeholder, null, rect);
         }
 
@@ -200,12 +200,13 @@ public sealed class WorldMapView : FrameworkElement
         {
             await _gate.WaitAsync();
             BitmapSource? bmp = null;
+            BitmapSource[]? levels = null;
             try
             {
                 if (gen != _generation) return;
                 var pixels = world.RenderRegion(dim, rx, rz);
-                bmp = BitmapSource.Create(512, 512, 96, 96, PixelFormats.Bgra32, null, pixels, 512 * 4);
-                bmp.Freeze();
+                levels = BuildLevels(pixels);
+                bmp = levels[0];
             }
             catch { /* bozuk region: yer tutucu kalır */ }
             finally
@@ -214,13 +215,59 @@ public sealed class WorldMapView : FrameworkElement
                 _ = Dispatcher.BeginInvoke(() =>
                 {
                     if (gen != _generation) return;
-                    t.Bitmap = bmp; t.Loading = false;
+                    t.Bitmap = bmp; t.Levels = levels; t.Loading = false;
                     ReportLoading();
                     InvalidateVisual();
                 });
             }
         });
         return t;
+    }
+
+    /// <summary>Uzaklaştırınca kullanılan küçültülmüş kopyalar: 512, 256, 128, 64, 32 piksel.</summary>
+    private static BitmapSource[] BuildLevels(uint[] pixels)
+    {
+        var levels = new List<BitmapSource>();
+        int size = 512;
+        while (true)
+        {
+            var bmp = BitmapSource.Create(size, size, 96, 96, PixelFormats.Bgra32, null, pixels, size * 4);
+            bmp.Freeze();
+            levels.Add(bmp);
+            if (size == 32) return levels.ToArray();
+            pixels = HalveImage(pixels, size);
+            size /= 2;
+        }
+    }
+
+    /// <summary>Saydam (üretilmemiş) pikselleri saymadan 2x2 ortalama alır.</summary>
+    private static uint[] HalveImage(uint[] src, int size)
+    {
+        int half = size / 2;
+        var dst = new uint[half * half];
+        for (int z = 0; z < half; z++)
+        for (int x = 0; x < half; x++)
+        {
+            uint r = 0, g = 0, b = 0, n = 0;
+            for (int dz = 0; dz < 2; dz++)
+            for (int dx = 0; dx < 2; dx++)
+            {
+                uint c = src[(z * 2 + dz) * size + x * 2 + dx];
+                if (c >> 24 == 0) continue;
+                r += (c >> 16) & 0xFF; g += (c >> 8) & 0xFF; b += c & 0xFF; n++;
+            }
+            if (n > 0) dst[z * half + x] = 0xFF000000 | (r / n) << 16 | (g / n) << 8 | (b / n);
+        }
+        return dst;
+    }
+
+    private BitmapSource LevelFor(Tile tile)
+    {
+        if (tile.Levels is not { } levels) return tile.Bitmap!;
+        double wanted = 512 * _scale * VisualTreeHelper.GetDpi(this).DpiScaleX;
+        int i = 0;
+        while (i < levels.Length - 1 && levels[i + 1].PixelWidth >= wanted) i++;
+        return levels[i];
     }
 
     private void ReportLoading() =>
